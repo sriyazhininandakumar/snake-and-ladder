@@ -22,9 +22,24 @@
 
 - [ ] backend of the game db design api design
 - [ ] long poll, 
-- [ ] how get notification when mobile is turn off.
+- [ ] how get notification when mobile is turn off. -fcm
 - [ ] data types in detail java js and postgres
 
-use no sql
-key value in posgres gameid key other details in json
 
+
+- [ ] excel sheet
+- [ ] 4 hashmap and 4 array 1 stack problem and queue
+(java)
+
+hashmap (1:1 2:2 3:3)
+
+
+- [ ] http uses what protocol, rest uses what protocol, udp for bulk download, tcp is used everywhere,
+- [ ] very thorough with hashmap
+hashmap, array, arraylist
+
+- [ ] refernce, what is md5
+- [ ] head first java hashmap
+
+string hashmap set
+- [ ]leetcode problem related to 012 again 012 
