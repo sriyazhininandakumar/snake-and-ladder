@@ -9,7 +9,7 @@ const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, proces
 });
 
 module.exports = {
-  sequelize, // export the sequelize instance
+  sequelize, 
   development: {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,

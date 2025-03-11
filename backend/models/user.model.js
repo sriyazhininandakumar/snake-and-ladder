@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    is_online: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false, 
+    },
   }, {
     timestamps: true,
   });

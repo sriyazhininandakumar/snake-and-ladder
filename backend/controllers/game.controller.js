@@ -1,6 +1,6 @@
 const gameService = require("../services/game.services");
+const authenticateToken = require("../middleware/auth.middleware");
 
-// ✅ Create a new game
 const createGame = async (req, res) => {
   try {
     console.log("Request Body:", req.body);
@@ -11,14 +11,15 @@ const createGame = async (req, res) => {
     }
 
     const game = await gameService.createGame(userid);
-    res.status(201).json(game);
+    const gameState = game.game_state;
+    res.json({ message: "Game created successfully", game });
   } catch (error) {
     console.error("Error creating game:", error);
     res.status(500).json({ message: "Error creating game", error: error.message });
   }
 };
 
-// ✅ Join a game
+
 const joinGame = async (req, res) => {
   try {
     const { gameId } = req.params;
@@ -32,9 +33,10 @@ const joinGame = async (req, res) => {
   }
 };
 
-// ✅ Roll dice
+
 const rollDice = async (req, res) => {
   try {
+    
     const { gameId } = req.params;
     const { userid } = req.body;
 
@@ -46,7 +48,7 @@ const rollDice = async (req, res) => {
   }
 };
 
-// ✅ Get game state
+
 const getGameState = async (req, res) => {
   try {
     const { gameId } = req.params;
@@ -58,4 +60,6 @@ const getGameState = async (req, res) => {
   }
 };
 
-module.exports = { createGame, joinGame, rollDice, getGameState };
+module.exports = { createGame: [authenticateToken, createGame],
+  joinGame: [authenticateToken, joinGame],
+   rollDice, getGameState };

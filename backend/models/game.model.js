@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  // Define associations
+  
   Game.associate = (db) => {
     Game.belongsTo(db.User, { foreignKey: "userid" });
   };

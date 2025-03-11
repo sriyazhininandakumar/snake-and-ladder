@@ -1,12 +1,14 @@
 const { Game, User } = require("../models");
-const { Op } = require("sequelize");
+
 
 const createGame = async (userId) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error("User not found");
+  const token = user.name.slice(0, 5).toUpperCase();
   const game = await Game.create({
-    gameid: Math.floor(1000 + Math.random() * 9000), 
     userid: userId,
     game_state: {
-      players: [{ id: userId, position: 0 }], 
+      players: [{ id: userId, position: 0, token: token  }], 
       board: {
         size: 100,
         snakes: { "98": 40, "56": 3, "78": 45 },
@@ -20,7 +22,7 @@ const createGame = async (userId) => {
     }
   });
 
-  return { gameId: game.gameid, joinUrl: `/api/game/${game.gameid}/join` };
+  return { gameId: game.gameid,game: game, joinUrl: `/api/game/${game.gameid}/join` };
 };
 
 const joinGame = async (gameId, userId) => {
@@ -30,23 +32,29 @@ const joinGame = async (gameId, userId) => {
   if (game.game_state.players.length >= 4) throw new Error("Game is full");
   if (game.game_state.status !== "waiting") throw new Error("Game already started");
 
-  // Create a new game state object
+  
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error("User not found");
+  const token = user.name.slice(0, 5).toUpperCase();
+
   const updatedGameState = { ...game.game_state };
-  updatedGameState.players.push({ id: userId, position: 0 });
+  const newPlayer = { id: userId, position: 0, token: token };
+  updatedGameState.players.push(newPlayer);
   updatedGameState.positions[userId] = 0;
 
   if (updatedGameState.players.length >= 2) {
     updatedGameState.status = "in_progress";
   }
 
-  // Assign and explicitly mark game_state as changed
+  
   game.game_state = updatedGameState;
-  game.changed("game_state"); // <- Important: Tells Sequelize to track this field
+  game.changed("game_state"); 
 
-  await game.save(); // Persist to DB
+  await game.save(); 
 
   return game;
 };
+
 
 
 
@@ -55,35 +63,66 @@ const rollDice = async (gameId, userId) => {
   if (!game) throw new Error("Game not found");
 
   const { players, turn, positions, board, status } = game.game_state;
+
   if (status !== "in_progress") throw new Error("Game is not in progress");
   if (turn !== userId) throw new Error("Not your turn");
 
   const diceRoll = Math.floor(Math.random() * 6) + 1;
   let newPosition = positions[userId] + diceRoll;
-
+  if (newPosition > board.size) {
+    newPosition = positions[userId]; 
+  }
+  
   if (board.snakes[newPosition]) {
     newPosition = board.snakes[newPosition];
   } else if (board.ladders[newPosition]) {
     newPosition = board.ladders[newPosition];
   }
 
-  game.game_state.positions[userId] = Math.min(newPosition, board.size);
+
+  let updatedGameState = { ...game.game_state };
+
+
+  updatedGameState.positions[userId] = Math.min(newPosition, board.size);
+
+
+
+  updatedGameState.players = updatedGameState.players.map(player => ({
+    ...player,
+    position: updatedGameState.positions[player.id]
+  }));
 
   let winner = null;
-  if (game.game_state.positions[userId] === board.size) {
+  if (updatedGameState.positions[userId] === board.size) {
     winner = userId;
-    game.game_state.status = "finished";
-    game.game_state.winner = winner;
+    updatedGameState.status = "finished";
+    updatedGameState.winner = winner;
+  }else {
+
+    const currentIndex = players.findIndex(p => p.id === userId);
+    updatedGameState.turn = players[(currentIndex + 1) % players.length].id;
   }
 
+ 
   const currentIndex = players.findIndex(p => p.id === userId);
   const nextPlayer = players[(currentIndex + 1) % players.length].id;
-  game.game_state.turn = nextPlayer;
-  game.game_state.dice_roll = diceRoll;
+  updatedGameState.turn = nextPlayer;
+  updatedGameState.dice_roll = diceRoll;
 
+  // Update the game state in the database
+  
+  game.game_state = updatedGameState;
+  game.changed("game_state", true);
   await game.save();
+
+  // Fetch updated game state from DB to verify changes
+  const updatedGame = await Game.findByPk(gameId);
+  console.log("Updated game state from DB:", JSON.stringify(updatedGame.game_state, null, 2));
+
   return { diceRoll, newPosition, winner };
 };
+
+
 
 const getGameState = async (gameId) => {
   const game = await Game.findByPk(gameId);
