@@ -42,7 +42,7 @@ const signin = async (req, res) => {
     const token = jwt.sign({ userId: user.userid }, JWT_SECRET, { expiresIn: "1h" });
 
     await user.update({ is_online: true });
-    res.json({ message: "Login successful", token, userId: user.userid });
+    res.json({ message: "Login successful", token, userId: user.userid, username: user.name});
   } catch (error) {
     res.status(500).json({ message: "Error logging in", error: error.message });
   }
@@ -67,7 +67,7 @@ const getOnlinePlayers = async (req, res) => {
   try {
     const onlineUsers = await User.findAll({
       where: { is_online: true },
-      attributes: ["userid", "name", "email"], // Select only necessary fields
+      attributes: ["userid", "name", "email"],
     });
 
     return res.json({ players: onlineUsers });

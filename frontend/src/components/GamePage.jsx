@@ -5,56 +5,79 @@ const GamePage = () => {
   const { gameId } = useParams();
   const [gameState, setGameState] = useState(null);
   const [diceRoll, setDiceRoll] = useState(null);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [currentPlayer, setCurrentPlayer] = useState(null);
+  const [winner, setWinner] = useState(null); 
 
-  useEffect(() => {
+  const username = localStorage.getItem("username");
+  const userId = localStorage.getItem("userid");
+  
     const fetchGameState = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/api/game/${gameId}`);
-        const data = await response.json();
-        console.log("Fetched game state:", data);
-        setGameState(data);
-        localStorage.setItem("gameData", JSON.stringify(data));
-      } catch (error) {
-        console.error("Error fetching game state:", error);
-      }
-    };
+        try {
+          const response = await fetch(`http://localhost:3000/api/game/${gameId}`);
+          const data = await response.json();
+          console.log("Fetched game state:", data);
+          setGameState(data);
+          localStorage.setItem("gameData", JSON.stringify(data));
+      
+          if (data.players && data.players.length > 0) {
+            const currentPlayerIndex = data.turn % data.players.length;
+            const current = data.players[currentPlayerIndex];
+            console.log("Setting current player:", current);
+            setCurrentPlayer(current);
 
+            const winningPlayer = data.players.find(player => data.positions[player.id] === 100);
+            if (winningPlayer) {
+              setWinner(winningPlayer);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching game state:", error);
+        }
+      };
+      
+      useEffect(() => {
     fetchGameState();
     const interval = setInterval(fetchGameState, 2000);
     return () => clearInterval(interval);
   }, [gameId]);
 
+  
+
   const rollDice = async () => {
-    if (!gameState) return;
-
-    const players = gameState.players;
-    const currentPlayer = players[currentPlayerIndex]; 
-
+    if (!gameState || !gameState.players || gameState.players.length === 0) return;
+  
+  
+    const currentPlayerIndex = gameState.turn % gameState.players.length;
+    const currentPlayer = gameState.players[currentPlayerIndex];
+    console.log("Current Player Index:", currentPlayerIndex);
+    console.log("Current Player:", currentPlayer);
+  
     try {
       const response = await fetch(`http://localhost:3000/api/game/${gameId}/roll`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userid: currentPlayer.id }),
       });
-
+  
       const data = await response.json();
       console.log("Dice roll response:", data);
       setDiceRoll({ player: currentPlayer.name, value: data.diceRoll });
-
+  
       setGameState((prev) => ({
         ...prev,
         positions: { ...prev.positions, [currentPlayer.id]: data.newPosition },
         players: prev.players.map((player) =>
           player.id === currentPlayer.id ? { ...player, position: data.newPosition } : player
         ),
+        turn: prev.turn + 1, 
       }));
-
-      setCurrentPlayerIndex((prevIndex) => (prevIndex + 1) % players.length);
+      await fetchGameState();
     } catch (error) {
       console.error("Error rolling dice:", error);
     }
   };
+  
+
 
   const renderBoard = () => {
     if (!gameState) return <p>Loading game...</p>;
@@ -101,12 +124,31 @@ const GamePage = () => {
 
   return (
     <div className="text-center p-6">
+        <h1 className="text-3xl font-bold mb-4">{username}'s Game Page</h1> 
       <h2 className="text-2xl font-bold mb-4">Snake and Ladder</h2>
-      {diceRoll !== null && <p className="text-lg font-bold">{diceRoll.player} rolled a {diceRoll.value}!</p>}
+     
+        
+        
+  
+
+
+
+{winner ? (
+        <h2 className="text-xl font-bold mt-4 "> {winner.token} Wins the Game! </h2>
+      ) : (
+        gameState && gameState.players && (
+          <h2 className="text-xl font-bold mt-4">
+            {currentPlayer ? `Current Player: ${currentPlayer.token}` : "Loading..."}
+          </h2>
+        )
+      )}
+
+      {diceRoll !== null && <p className="text-lg font-bold">{username} rolled a {diceRoll.value}!</p>}
       {renderBoard()}
       <button
         className="mt-4 px-4 py-2 bg-blue-600 text-white font-bold rounded"
-        onClick={rollDice}
+        onClick={rollDice}    
+        disabled={currentPlayer?.id != userId}   
       >
         Roll Dice
       </button>

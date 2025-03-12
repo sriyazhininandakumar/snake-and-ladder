@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 const StartGame = () => {
   const navigate = useNavigate();
-
+  const username = localStorage.getItem("username");
   const startNewGame = async () => {
     try {
       const userid = localStorage.getItem("userid"); 
@@ -37,7 +37,7 @@ const StartGame = () => {
 
   return (
     <div>
-      <h2>Welcome!</h2>
+      <h2>Welcome {username}!</h2>
       <button onClick={startNewGame}>Start Game</button>
     </div>
   );

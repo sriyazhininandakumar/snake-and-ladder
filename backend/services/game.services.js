@@ -4,19 +4,19 @@ const { Game, User } = require("../models");
 const createGame = async (userId) => {
   const user = await User.findByPk(userId);
   if (!user) throw new Error("User not found");
-  const token = user.name.slice(0, 5).toUpperCase();
+  const token = user.name.slice(0, 2).toUpperCase();
   const game = await Game.create({
     userid: userId,
     game_state: {
-      players: [{ id: userId, position: 0, token: token  }], 
+      players: [{ id: userId, position: 1, token: token  }], 
       board: {
         size: 100,
         snakes: { "98": 40, "56": 3, "78": 45 },
         ladders: { "5": 25, "32": 74, "45": 90 }
       },
-      turn: userId,
+      turn: 0,
       dice_roll: null,
-      positions: { [userId]: 0 },
+      positions: { [userId]: 1 },
       status: "waiting",
       winner: null
     }
@@ -35,12 +35,12 @@ const joinGame = async (gameId, userId) => {
   
   const user = await User.findByPk(userId);
   if (!user) throw new Error("User not found");
-  const token = user.name.slice(0, 5).toUpperCase();
+  const token = user.name.slice(0, 2).toUpperCase();
 
   const updatedGameState = { ...game.game_state };
-  const newPlayer = { id: userId, position: 0, token: token };
+  const newPlayer = { id: userId, position: 1, token: token };
   updatedGameState.players.push(newPlayer);
-  updatedGameState.positions[userId] = 0;
+  updatedGameState.positions[userId] = 1;
 
   if (updatedGameState.players.length >= 2) {
     updatedGameState.status = "in_progress";
@@ -65,28 +65,26 @@ const rollDice = async (gameId, userId) => {
   const { players, turn, positions, board, status } = game.game_state;
 
   if (status !== "in_progress") throw new Error("Game is not in progress");
-  if (turn !== userId) throw new Error("Not your turn");
+ 
+  const currentPlayerIndex = turn % players.length;
+  const currentPlayer = players[currentPlayerIndex];
 
+  if (currentPlayer.id !== userId) throw new Error("Not your turn");
+ 
   const diceRoll = Math.floor(Math.random() * 6) + 1;
   let newPosition = positions[userId] + diceRoll;
-  if (newPosition > board.size) {
-    newPosition = positions[userId]; 
-  }
-  
+
+  if (newPosition > board.size) newPosition = positions[userId];
+ 
   if (board.snakes[newPosition]) {
     newPosition = board.snakes[newPosition];
   } else if (board.ladders[newPosition]) {
     newPosition = board.ladders[newPosition];
   }
-
-
+ 
   let updatedGameState = { ...game.game_state };
-
-
   updatedGameState.positions[userId] = Math.min(newPosition, board.size);
-
-
-
+   
   updatedGameState.players = updatedGameState.players.map(player => ({
     ...player,
     position: updatedGameState.positions[player.id]
@@ -97,27 +95,14 @@ const rollDice = async (gameId, userId) => {
     winner = userId;
     updatedGameState.status = "finished";
     updatedGameState.winner = winner;
-  }else {
-
-    const currentIndex = players.findIndex(p => p.id === userId);
-    updatedGameState.turn = players[(currentIndex + 1) % players.length].id;
+  } else {
+    updatedGameState.turn += 1; 
   }
-
- 
-  const currentIndex = players.findIndex(p => p.id === userId);
-  const nextPlayer = players[(currentIndex + 1) % players.length].id;
-  updatedGameState.turn = nextPlayer;
-  updatedGameState.dice_roll = diceRoll;
-
-  // Update the game state in the database
   
+  updatedGameState.dice_roll = diceRoll;
   game.game_state = updatedGameState;
   game.changed("game_state", true);
   await game.save();
-
-  // Fetch updated game state from DB to verify changes
-  const updatedGame = await Game.findByPk(gameId);
-  console.log("Updated game state from DB:", JSON.stringify(updatedGame.game_state, null, 2));
 
   return { diceRoll, newPosition, winner };
 };

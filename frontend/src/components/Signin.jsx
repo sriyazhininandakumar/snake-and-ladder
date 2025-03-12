@@ -19,12 +19,14 @@ const SignIn = () => {
     console.log("Login response:", data);  
   
     if (data.token) {
-      console.log("UserID from response:", data.userid); 
+      
   
       localStorage.setItem('userid', data.userId);  
       localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username);
   
-      console.log("Stored userid:", localStorage.getItem("userid"));  
+      console.log("Stored userid:", localStorage.getItem("userid")); 
+      console.log("Stored username:", localStorage.getItem("username"));  
   
       navigate(`/start-game`);
     } else {

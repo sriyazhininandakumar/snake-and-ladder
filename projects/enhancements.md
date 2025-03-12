@@ -43,3 +43,27 @@ hashmap, array, arraylist
 
 string hashmap set
 - [ ]leetcode problem related to 012 again 012 
+
+
+- [x] add who's page at top right corner
+- [x] game starts at 1, y and k must be seen
+- [x] two browser for testing
+- [ ] announce winner 
+- [x] roll die disabled for players turn
+
+
+- [ ] welcome yall
+- [ ] remove snake and ladder title
+- [ ] yazh rolled 3 no u rolled three
+- [ ] green colour list of players playing. whos turn must be bold.
+- [ ] show gameID in page
+- [ ] make token circle eg ka in circle number in small
+
+- [ ] create an issue from that create branch
+
+- [ ] web socket when yazh rolls 
+- [ ] deploy it first nginx
+
+
+
+
