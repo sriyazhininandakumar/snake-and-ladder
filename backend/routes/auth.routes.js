@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post("/signup", signup);
 router.post("/signin", signin);
-router.post("/signout", signout);
+router.post("/signout", authenticateToken,signout);
 router.get("/online-players", getOnlinePlayers); 
 module.exports = router;
