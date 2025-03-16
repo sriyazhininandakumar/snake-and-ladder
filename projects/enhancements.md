@@ -52,11 +52,11 @@ string hashmap set
 - [x] roll die disabled for players turn
 
 
-- [ ] welcome yall
-- [ ] remove snake and ladder title
-- [ ] yazh rolled 3 no u rolled three
-- [ ] green colour list of players playing. whos turn must be bold.
-- [ ] show gameID in page
+- [x] welcome yall
+- [x] remove snake and ladder title
+- [x] yazh rolled 3 no u rolled three
+- [x] green colour list of players playing. whos turn must be bold.
+- [x] show gameID in page
 - [ ] make token circle eg ka in circle number in small
 
 - [ ] create an issue from that create branch

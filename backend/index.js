@@ -14,7 +14,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins for testing; restrict in production
+    origin: "*", 
   },
 });
 
@@ -27,30 +27,29 @@ app.use("/api/game", gameRoutes);
 io.on("connection", (socket) => {
   console.log(` New client connected: ${socket.id}`);
 
-  // Listen for "joinGame" event from clients
   socket.on("joinGame", (gameId) => {
     socket.join(gameId);
-    console.log(`✅ User ${socket.id} joined game room: ${gameId}`);
+    console.log(`User ${socket.id} joined game room: ${gameId}`);
   });
 
-  // Listen for "rollDice" event
+  
   socket.on("rollDice", async ({ gameId, userId }) => {
-    console.log(`✅ rollDice event received! gameId: ${gameId}, userId: ${userId}`);
+    console.log(`rollDice event received! gameId: ${gameId}, userId: ${userId}`);
     try {
       const result = await gameService.rollDice(gameId, userId);
-      const game = await gameService.getGameState(gameId); // Implement this function in gameService
+      const game = await gameService.getGameState(gameId); 
         const player = game.players.find(p => p.id === userId); 
         if (!player) {
           throw new Error("Player not found in game");
       }
-      console.log(`🔄 Backend Dice Roll: ${result.diceRoll}`);
+      console.log(`Backend Dice Roll: ${result.diceRoll}`);
       io.to(gameId).emit("gameStateUpdate", {
         diceRoll: result.diceRoll,
         player, 
         newPosition: result.newPosition,
         winner: result.winner || null,
       });
-      console.log("📢Emitting gameStateUpdate:", {
+      console.log("Emitting gameStateUpdate:", {
         diceRoll: result.diceRoll,
         player,
         newPosition: result.newPosition,
