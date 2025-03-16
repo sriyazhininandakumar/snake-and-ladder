@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.post("/", createGame);
 router.put("/:gameId/join",joinGame);
-router.put("/:gameId/roll", rollDice);
 router.get("/:gameId", getGameState);
 
 module.exports = router;
