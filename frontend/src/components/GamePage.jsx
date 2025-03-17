@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { io } from "socket.io-client";
+const socket = io("http://localhost:3000");
 
 const GamePage = () => {
   const { gameId } = useParams();
@@ -41,43 +43,75 @@ const GamePage = () => {
     return () => clearInterval(interval);
   }, [gameId]);
 
+  useEffect(() => {
+    socket.emit("joinGame", gameId); 
+    console.log(`Joined game room: ${gameId}`);
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+  
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+    };
+  }, [gameId]);
   
 
-  const rollDice = async () => {
+
+
+  useEffect(() => {
+    const handleGameStateUpdate = (data) => {
+      console.log("Received gameStateUpdate in frontend:", data);
+  
+      if (data.diceRoll !== undefined) {
+        console.log("Updating Dice Roll:", data.diceRoll);
+        setDiceRoll({ value: data.diceRoll, player: data.player.token });
+      } else {
+        console.log("Dice roll data missing!");
+      }
+  
+      setGameState(prevState => ({
+        ...prevState,
+        positions: { ...prevState.positions, [data.player.id]: data.newPosition },
+        turn: prevState.turn + 1,
+      }));
+  
+      if (data.winner) {
+        setWinner(data.winner);
+      }
+    };
+  
+    socket.on("gameStateUpdate", handleGameStateUpdate);
+  
+    return () => {
+      console.log("Removing gameStateUpdate listener");
+      socket.off("gameStateUpdate", handleGameStateUpdate);
+    };
+  }, []);
+  
+
+
+
+  const rollDice = () => {
+
     if (!gameState || !gameState.players || gameState.players.length === 0) return;
-  
-  
+
     const currentPlayerIndex = gameState.turn % gameState.players.length;
     const currentPlayer = gameState.players[currentPlayerIndex];
-    console.log("Current Player Index:", currentPlayerIndex);
-    console.log("Current Player:", currentPlayer);
-  
-    try {
-      const response = await fetch(`http://localhost:3000/api/game/${gameId}/roll`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userid: currentPlayer.id }),
-      });
-  
-      const data = await response.json();
-      console.log("Dice roll response:", data);
-      setDiceRoll({ player: currentPlayer.name, value: data.diceRoll });
-  
-      setGameState((prev) => ({
-        ...prev,
-        positions: { ...prev.positions, [currentPlayer.id]: data.newPosition },
-        players: prev.players.map((player) =>
-          player.id === currentPlayer.id ? { ...player, position: data.newPosition } : player
-        ),
-        turn: prev.turn + 1, 
-      }));
-      await fetchGameState();
-    } catch (error) {
-      console.error("Error rolling dice:", error);
-    }
-  };
-  
 
+    console.log("Current Player:", currentPlayer);
+    console.log("Rolling dice via WebSocket...");
+    console.log("dice roll:", diceRoll);
+    console.log("Emitting rollDice:", { gameId, userId: currentPlayer.id });
+    socket.emit("rollDice", { gameId, userId: currentPlayer.id });
+  };
+
+ 
+  
 
   const renderBoard = () => {
     if (!gameState) return <p>Loading game...</p>;
@@ -101,17 +135,27 @@ const GamePage = () => {
         boxes.push(
           <div
             key={boxNumber}
-            className={`relative w-12 h-12 flex items-center justify-center border text-lg font-bold 
-              ${playerToken ? "bg-blue-400 text-white" : "bg-gray-200"} 
+            className={`relative w-12 h-12 flex items-center justify-center border text-xs font-bold 
               ${isSnakeStart ? "bg-red-500 text-white" : ""} 
-              ${isLadderStart ? "bg-green-500 text-white" : ""}`}
+              ${isLadderStart ? "bg-green-500 text-white" : "bg-gray-200"}`}
           >
             {boxNumber}
-            {playerToken && <div className="absolute top-0 right-0 text-sm">{playerToken}</div>}
+        
+            {/* Player Token as Blue Circle */}
+            {playerToken && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-blue-500 text-white text-xs">
+                  {playerToken}
+                </div>
+              </div>
+            )}
+        
+            {/* Snake & Ladder Indicators */}
             {isSnakeStart && <div className="absolute bottom-0 left-0 text-xs">↓ {isSnakeStart}</div>}
             {isLadderStart && <div className="absolute bottom-0 left-0 text-xs">↑ {isLadderStart}</div>}
           </div>
         );
+        
       }
     }
 
@@ -123,14 +167,29 @@ const GamePage = () => {
   };
 
   return (
+
+<>
+
+    {gameState && gameState.players && (
+  <div className="mt-4">
+    <h2 className="text-xl font-bold mb-2">Players in the Game:</h2>
+    <ul className="text-green-600 font-bold">
+      {gameState.players.map((player) => (
+        <li key={player.id} className="text-lg">{player.token}</li>
+      ))}
+    </ul>
+    <h2 className="text-lg font-bold text-gray-700 mt-2">Game ID: {gameId}</h2>
+
+  </div>
+)}
+
     <div className="text-center p-6">
-        <h1 className="text-3xl font-bold mb-4">{username}'s Game Page</h1> 
-      <h2 className="text-2xl font-bold mb-4">Snake and Ladder</h2>
+        <h1 className="text-3xl font-bold mb-4">Welcome {username}!</h1> 
+      
      
         
         
   
-
 
 
 {winner ? (
@@ -143,7 +202,20 @@ const GamePage = () => {
         )
       )}
 
-      {diceRoll !== null && <p className="text-lg font-bold">{username} rolled a {diceRoll.value}!</p>}
+{diceRoll && (
+  <p className="text-lg font-bold">
+    {console.log("diceRoll.player:", diceRoll.player, "username:", username, "username.slice(0,2):", username.slice(0, 2).toUpperCase())}
+    {diceRoll.player.toUpperCase() === username.slice(0, 2).toUpperCase()  
+      ? `You rolled a ${diceRoll.value}!`  
+      : `${diceRoll.player} rolled a ${diceRoll.value}!`}
+  </p>
+)}
+
+
+
+
+
+      
       {renderBoard()}
       <button
         className="mt-4 px-4 py-2 bg-blue-600 text-white font-bold rounded"
@@ -152,8 +224,10 @@ const GamePage = () => {
       >
         Roll Dice
       </button>
-    </div>
+    </div></>
   );
 };
 
 export default GamePage;
+
+

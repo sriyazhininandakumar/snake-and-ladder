@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
 
 const SignUp = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [notification, setNotification] = useState(null); // Notification state
   const navigate = useNavigate();
 
   const handleSignUp = async (e) => {
@@ -18,40 +19,65 @@ const SignUp = () => {
     const data = await res.json();
 
     if (data.userId) {
-      alert('User created successfully');
-      navigate('/signin');
+      setNotification({ type: 'success', message: 'User created successfully!' });
+      setTimeout(() => {
+        setNotification(null);
+        navigate('/');
+      }, 2000); // Redirect after 2 seconds
     } else {
-      alert('Sign up failed');
+      setNotification({ type: 'error', message: 'Sign up failed. Please try again.' });
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
   return (
-    <div>
-      <h2>Sign Up</h2>
-      <form onSubmit={handleSignUp}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button type="submit">Sign Up</button>
-      </form>
-      <p>
-        Already have an account? <Link to="/signin">Sign In</Link>
-      </p>
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="bg-white shadow-lg rounded-lg p-8 w-96 relative">
+        {/* Notification */}
+        {notification && (
+          <div
+            className={`absolute top-[-50px] left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white ${
+              notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`}
+          >
+            {notification.message}
+          </div>
+        )}
+
+        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">Sign Up</h2>
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-300"
+          >
+            Sign Up
+          </button>
+        </form>
+        <p className="text-gray-600 text-center mt-4">
+          Already have an account? <Link to="/" className="text-green-500 hover:underline">Sign In</Link>
+        </p>
+      </div>
     </div>
   );
 };

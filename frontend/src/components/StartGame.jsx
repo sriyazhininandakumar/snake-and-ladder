@@ -36,11 +36,21 @@ const StartGame = () => {
   };
 
   return (
-    <div>
-      <h2>Welcome {username}!</h2>
-      <button onClick={startNewGame}>Start Game</button>
+    <div className="flex flex-col justify-center items-center min-h-screen bg-white">
+      <div className="bg-white p-8 rounded-lg shadow-md w-96 border border-gray-200 text-center">
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Welcome, <span className="text-green-600">{username}!</span>
+        </h2>
+                <button
+          onClick={startNewGame}
+          className="mt-4 w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+        >
+          Start New Game
+        </button>
+      </div>
     </div>
   );
 };
 
 export default StartGame;
+
