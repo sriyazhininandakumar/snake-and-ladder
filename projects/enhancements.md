@@ -58,12 +58,20 @@ string hashmap set
 - [x] green colour list of players playing. whos turn must be bold.
 - [x] show gameID in page
 - [ ] make token circle eg ka in circle number in small
-
 - [ ] create an issue from that create branch
-
 - [ ] web socket when yazh rolls 
 - [ ] deploy it first nginx
 
+
+
+- [ ] grid between
+- [ ] connection betwwn snakes colours of same shade.
+- [ ] show ka and ya circle
+- [ ] show snake and ladder
+- [ ] explain websocket
+- [ ] enhance ui,
+- [ ] show snakes
+- [ ] three player support
 
 
 
