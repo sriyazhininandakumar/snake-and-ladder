@@ -9,6 +9,7 @@ const GamePage = () => {
   const [diceRoll, setDiceRoll] = useState(null);
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [winner, setWinner] = useState(null); 
+  const [leadingPlayer, setLeadingPlayer] = useState(null);
 
   const username = localStorage.getItem("username");
   const userId = localStorage.getItem("userid");
@@ -31,6 +32,11 @@ const GamePage = () => {
             if (winningPlayer) {
               setWinner(winningPlayer);
             }
+
+            let leading = data.players.reduce((max, player) => 
+              data.positions[player.id] > data.positions[max.id] ? player : max, data.players[0]);
+    
+            setLeadingPlayer(leading);
           }
         } catch (error) {
           console.error("Error fetching game state:", error);
@@ -110,124 +116,155 @@ const GamePage = () => {
     socket.emit("rollDice", { gameId, userId: currentPlayer.id });
   };
 
- 
-  
-
   const renderBoard = () => {
     if (!gameState) return <p>Loading game...</p>;
-
+  
     const { board, players, positions } = gameState;
-
     const boardSize = 10;
     const boxes = [];
-
+  
+    const snakeColors = {
+      98: "bg-red-800", 
+      56: "bg-orange-600", 
+      78: "bg-orange-700", 
+    };
+  
+    const ladderColors = {
+      5: "bg-green-600",  
+      32: "bg-emerald-900", 
+      45: "bg-emerald-700", 
+    };
+  
     for (let row = 9; row >= 0; row--) {
       for (let col = 0; col < boardSize; col++) {
         const isEvenRow = row % 2 === 1;
         const boxNumber = isEvenRow
           ? row * boardSize + (boardSize - col)
           : row * boardSize + (col + 1);
-
-        const playerToken = players.find((p) => positions[p.id] === boxNumber)?.token || "";
+  
+        const playersInBox = players.filter((p) => positions[p.id] === boxNumber);
+  
         const isSnakeStart = board.snakes[boxNumber];
+        const isSnakeEnd = Object.values(board.snakes).includes(boxNumber);
         const isLadderStart = board.ladders[boxNumber];
-
+        const isLadderEnd = Object.values(board.ladders).includes(boxNumber);
+  
+        let boxClass = "bg-gray-900"; 
+  
+        if (isSnakeStart) boxClass = snakeColors[boxNumber] || "bg-red-600";
+        if (isSnakeEnd) boxClass = snakeColors[Object.keys(board.snakes).find(key => board.snakes[key] === boxNumber)] || "bg-red-600";
+  
+        if (isLadderStart) boxClass = ladderColors[boxNumber] || "bg-green-600";
+        if (isLadderEnd) boxClass = ladderColors[Object.keys(board.ladders).find(key => board.ladders[key] === boxNumber)] || "bg-green-600";
+  
         boxes.push(
           <div
             key={boxNumber}
-            className={`relative w-12 h-12 flex items-center justify-center border text-xs font-bold 
-              ${isSnakeStart ? "bg-red-500 text-white" : ""} 
-              ${isLadderStart ? "bg-green-500 text-white" : "bg-gray-200"}`}
+            className={`relative w-12 h-12 flex items-center justify-center border text-xs font-bold ${boxClass}`}
           >
-            {boxNumber}
-        
-            {/* Player Token as Blue Circle */}
-            {playerToken && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-blue-500 text-white text-xs">
-                  {playerToken}
-                </div>
+            <div className="absolute top-1 right-1 text-xs font-bold text-gray-100">
+              {boxNumber}
+            </div>
+  
+            
+            {playersInBox.length > 0 && (
+              <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1 p-1">
+                {playersInBox.map((player, index) => (
+                  <div
+                    key={player.id}
+                    className="w-5 h-5 rounded-full flex items-center justify-center bg-blue-500 text-white text-xs"
+                    style={{ zIndex: index + 1 }}
+                  >
+                    {player.token}
+                  </div>
+                ))}
               </div>
             )}
-        
-            {/* Snake & Ladder Indicators */}
-            {isSnakeStart && <div className="absolute bottom-0 left-0 text-xs">↓ {isSnakeStart}</div>}
-            {isLadderStart && <div className="absolute bottom-0 left-0 text-xs">↑ {isLadderStart}</div>}
+  
+            
+            {isSnakeStart && <div className="absolute bottom-0 left-0 text-xs text-white"><div className="text-4xl font-bold">↓</div>SH {isSnakeStart}</div>}
+            {isSnakeEnd && <div className="absolute top-0 left-0 text-xs text-white">ST</div>}
+            {isLadderStart && <div className="absolute bottom-0 left-0 text-xs text-white"><div className="text-4xl font-bold">↑</div>LH {isLadderStart}</div>}
+            {isLadderEnd && <div className="absolute top-0 left-0 text-xs text-white">LT</div>}
           </div>
         );
-        
       }
     }
-
+  
     return (
-      <div className="grid grid-cols-10 gap-1 p-4 border border-gray-800 w-fit mx-auto">
+      <div className="grid grid-cols-10 gap-1 p-4 border border-white w-fit mx-auto">
         {boxes}
       </div>
     );
   };
-
-  return (
-
-<>
-
-    {gameState && gameState.players && (
-  <div className="mt-4">
-    <h2 className="text-xl font-bold mb-2">Players in the Game:</h2>
-    <ul className="text-green-600 font-bold">
-      {gameState.players.map((player) => (
-        <li key={player.id} className="text-lg">{player.token}</li>
-      ))}
-    </ul>
-    <h2 className="text-lg font-bold text-gray-700 mt-2">Game ID: {gameId}</h2>
-
-  </div>
-)}
-
-    <div className="text-center p-6">
-        <h1 className="text-3xl font-bold mb-4">Welcome {username}!</h1> 
-      
-     
-        
-        
   
-
-
-{winner ? (
-        <h2 className="text-xl font-bold mt-4 "> {winner.token} Wins the Game! </h2>
+  return (
+    <>
+    <div className="bg-black min-h-screen text-black p-6">
+     
+      <h1 className="text-3xl font-bold text-center mt-8 text-green-600">
+        WELCOME {username.toUpperCase()}!
+      </h1>
+      <div className="flex gap-6 mt-20 justify-center ">
+      <div className="p-4 border border-white w-64 rounded-lg  text-white">
+      {gameState?.players && (
+         <div className="space-y-4">
+          <h2 className="text-xl font-bold mb-2 text-yellow-500 text-center">PLAYERS</h2>
+          <ul className="font-bold text-center space-y-1">
+            {gameState.players.map(player => (
+              <li key={player.id} className="text-lg text-white"> {player.name.toUpperCase() }  </li>
+            ))}
+          </ul>
+          <h2 className="text-lg font-bold text-green-600 text-center">GAME ID: {gameId}</h2>
+          {winner ? (
+        <h2 className="text-2xl font-bold text-center text-emerald-900 text-center mt-4">
+          {winner.name.toUpperCase()} WINS THE GAME! 
+        </h2>
       ) : (
-        gameState && gameState.players && (
-          <h2 className="text-xl font-bold mt-4">
-            {currentPlayer ? `Current Player: ${currentPlayer.token}` : "Loading..."}
+        gameState?.players && (
+          <h2 className="text-xl font-bold text-lime-600 text-center mt-4">
+            {currentPlayer ? `CURRENT PLAYER: ${currentPlayer.token}` : "Loading..."}
           </h2>
         )
       )}
-
-{diceRoll && (
-  <p className="text-lg font-bold">
-    {console.log("diceRoll.player:", diceRoll.player, "username:", username, "username.slice(0,2):", username.slice(0, 2).toUpperCase())}
-    {diceRoll.player.toUpperCase() === username.slice(0, 2).toUpperCase()  
-      ? `You rolled a ${diceRoll.value}!`  
-      : `${diceRoll.player} rolled a ${diceRoll.value}!`}
-  </p>
-)}
-
-
-
-
-
+       {leadingPlayer && (
+                  <h2 className="text-xl font-bold text-cyan-500 text-center mt-4">
+                    LEADING PLAYER: {leadingPlayer.token}
+                  </h2>
+                )}
+       {diceRoll && (
+        <p className="text-lg font-bold text-center mt-2 text-orange-600">
+          {diceRoll.player.toUpperCase() === username.slice(0, 2).toUpperCase()
+            ? `YOU ROLLED A ${diceRoll.value}!`
+            : `${diceRoll.player} ROLLED A ${diceRoll.value}!`}
+        </p>
+      )}
+        </div>
+      )}
+  </div>
+  <div className="flex flex-col items-center"></div>
+  <div className="flex justify-center">{renderBoard()}</div>
+     
+  
+     
+    
       
-      {renderBoard()}
-      <button
-        className="mt-4 px-4 py-2 bg-blue-600 text-white font-bold rounded"
-        onClick={rollDice}    
-        disabled={currentPlayer?.id != userId}   
-      >
-        Roll Dice
-      </button>
-    </div></>
+    <div className="flex flex-col">
+      <div className="text-center">
+        <button
+          className=" px-9 py-9 mt-40 bg-green-600 text-white font-bold rounded hover:bg-green-700 transition"
+          onClick={rollDice}
+          disabled={currentPlayer?.id != userId}
+        >
+          Roll Dice
+        </button>
+      </div></div>
+    </div></div>
+    </>
   );
+  
+
+ 
 };
 
 export default GamePage;
-
-

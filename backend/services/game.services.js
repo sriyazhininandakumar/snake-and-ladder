@@ -8,10 +8,10 @@ const createGame = async (userId) => {
   const game = await Game.create({
     userid: userId,
     game_state: {
-      players: [{ id: userId, position: 1, token: token  }], 
+      players: [{ id: userId,name: user.name, position: 1, token: token  }], 
       board: {
         size: 100,
-        snakes: { "98": 40, "56": 3, "78": 45 },
+        snakes: { "98": 40, "56": 3, "78": 44 },
         ladders: { "5": 25, "32": 74, "45": 90 }
       },
       turn: 0,
@@ -21,38 +21,63 @@ const createGame = async (userId) => {
       winner: null
     }
   });
-
+  console.log("User name:", user.name); 
   return { gameId: game.gameid,game: game, joinUrl: `/api/game/${game.gameid}/join` };
 };
 
 const joinGame = async (gameId, userId) => {
-  const game = await Game.findByPk(gameId);
+  try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+          console.error("User not found:", userId);
+          throw new Error("User not found");
+      }
+      const game = await Game.findByPk(gameId);
+      if (!game) {
+          throw new Error("Game not found");
+      }
+      const gameState = game.game_state || {};
 
-  if (!game) throw new Error("Game not found");
-  if (game.game_state.players.length >= 4) throw new Error("Game is full");
-  if (game.game_state.status !== "waiting") throw new Error("Game already started");
+      if (!gameState.players) {
+          gameState.players = [];
+      }
+           if (gameState.players.length >= 4) {
+          throw new Error("Game is full");
+      }
+  if (gameState.players.some(player => player.id === userId)) {
+          throw new Error("User already joined the game");
+      }
+ const token = user.name.slice(0, 2).toUpperCase();
 
-  
-  const user = await User.findByPk(userId);
-  if (!user) throw new Error("User not found");
-  const token = user.name.slice(0, 2).toUpperCase();
+       const newPlayer = {
+          id: userId,
+          name: user.name,
+          token: token,
+          position: 1
+      };
+      gameState.players.push(newPlayer);
 
-  const updatedGameState = { ...game.game_state };
-  const newPlayer = { id: userId, position: 1, token: token };
-  updatedGameState.players.push(newPlayer);
-  updatedGameState.positions[userId] = 1;
+      if (!gameState.positions) {
+          gameState.positions = {};
+      }
+      gameState.positions[userId] = 1;
 
-  if (updatedGameState.players.length >= 2) {
-    updatedGameState.status = "in_progress";
+       gameState.status = gameState.players.length >= 2 ? "in_progress" : "waiting";
+
+      console.log("Before saving:", JSON.stringify(gameState, null, 2));
+
+      game.game_state = gameState;
+      game.changed("game_state", true);
+      await game.save();
+
+       const updatedGame = await Game.findByPk(gameId);
+      console.log("After saving, checking DB:", JSON.stringify(updatedGame.game_state, null, 2));
+
+      return updatedGame;
+  } catch (error) {
+      console.error("Error joining game:", error.message);
+      throw error;
   }
-
-  
-  game.game_state = updatedGameState;
-  game.changed("game_state"); 
-
-  await game.save(); 
-
-  return game;
 };
 
 
