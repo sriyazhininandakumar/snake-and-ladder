@@ -64,14 +64,19 @@ string hashmap set
 
 
 
-- [ ] grid between
-- [ ] connection betwwn snakes colours of same shade.
-- [ ] show ka and ya circle
-- [ ] show snake and ladder
+- [x] grid between
+- [x] connection betwwn snakes colours of same shade.
+- [x] show ka and ya circle
 - [ ] explain websocket
-- [ ] enhance ui,
-- [ ] show snakes
-- [ ] three player support
+- [x] enhance ui
+- [x] three player support
 
+- [ ] explain websocket
+- [x] fix join
+- [ ] it must be snake or ladder paatha theriyanum
+- [ ] write article.
+
+
+resume and video
 
 

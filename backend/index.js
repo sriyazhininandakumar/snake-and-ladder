@@ -49,12 +49,7 @@ io.on("connection", (socket) => {
         newPosition: result.newPosition,
         winner: result.winner || null,
       });
-      console.log("Emitting gameStateUpdate:", {
-        diceRoll: result.diceRoll,
-        player,
-        newPosition: result.newPosition,
-        winner: result.winner || null
-      });
+     
       
 
       console.log(`Dice Roll: ${result.diceRoll} | Player ${userId} moved to ${result.newPosition}`);
